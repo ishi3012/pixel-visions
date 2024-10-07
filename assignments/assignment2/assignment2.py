@@ -10,7 +10,8 @@ This module implements various image processing techniques:
 - Piecewise Stretching: Apply piecewise linear transformations to enhance contrast in specific regions.
 - Image Transformations: Perform other transformations such as rotation, scaling, and translation.
 
-Each method is designed to take an input image (typically in NumPy array format) and return the processed result.
+Each method processes a dictionary of images, where each key is the image name and the value is a NumPy array representing the image. 
+This allows users to perform operations on multiple images if desired.
 
 Usage:
 Import this module and call the relevant method for the desired image operation.
@@ -41,13 +42,36 @@ class ContrastType(Enum):
     CONTRAST_STRETCH_GAMMA    = auto()
     CONTRAST_STRETCH_EXTREME  = auto()
     CONTRAST_STRETCH_RANDOM  = auto()
-    # CONTRAST_STRETCH_BASIC_SUBTRACTED  = auto()
-    # CONTRAST_STRETCH_REVERSED_SUBTRACTED = auto()
-    # CONTRAST_STRETCH_LARGELOG_SUBTRACTED = auto()
-    # CONTRAST_STRETCH_GAMMA_SUBTRACTED    = auto()
-    # CONTRAST_STRETCH_EXTREME_SUBTRACTED  = auto()
-    # CONTRAST_STRETCH_RANDOM_SUBTRACTED  = auto()
 
+
+def read_images(image_paths: list) -> Dict[str, np.ndarray]:
+    """
+        Reads image files from a list of file path locations using OpenCV.
+
+        Parameters:
+            - image_paths (List[str]): A list of file paths pointing to the image files to be processed.
+        Returns:
+            - Dict[str, np.ndarray]: A dictionary where the key is the image name (without extension) and the value is the image data as a NumPy array.
+    
+    """
+
+    if image_paths is None:
+        raise ValueError("The list of image filepaths is empty. ")    
+
+    images = {} 
+    image_count = 0   
+    for path in image_paths:
+        if path is None:
+            continue
+        image_name = path.split("/")[-1].split(".")[0]
+        images[image_name] = cv2.imread(path)
+        image_count += 1 
+        # Convert and save the colored image as grayscale as well in the dictionary.
+        if len(images[image_name].shape) == 3:
+            images["GS_"+image_name] = cv2.cvtColor(images[image_name], cv2.COLOR_BGR2GRAY)    
+            
+    print(f" Total images loaded = {image_count} out of {len(image_paths)}")
+    return images
 
 
 def save_image(images: Dict[str, np.ndarray], fileDirectory = "assignments/assignment2/Output/OutputImages/", imageType : str = "Original") -> None:
@@ -75,6 +99,12 @@ def save_image(images: Dict[str, np.ndarray], fileDirectory = "assignments/assig
 def plot_images(images: Dict[str, np.ndarray] , title: str = "Display images", outputfile:str = "assignments/assignment2/Output/Output.jpeg") -> None:
     """
     Display the images with the given title.
+
+    Parameters: 
+        - images (Dict[str, np.ndarray]) : Dictionary of images to plot
+        - title (str)                    : Text to display as title of the plot
+        - outputfile(str)                : The output file path. Default is "assignments/assignment2/Output/Output.jpeg"
+
     """
     if images is None:
         print(f"ERROR: Images not available.")
@@ -113,7 +143,7 @@ def scale_image(images: Dict[str, np.ndarray] , scale_factor: int = 1) -> None:
     """
     Scales the image by the given scaling factor. 
 
-    Parameters:
+    
     Parameters:
         - images: Dict[str, np.ndarray] : Dictionary of images to shrink
         - scale_factor(int)             : The scaling factor by which the input image should be scaled.          
@@ -194,30 +224,6 @@ def zoom_image(images: Dict[str, np.ndarray], scale_factor: int = 1) -> Dict[str
         # Add zoomed image to the dictionary
         zoomed_images[key] = zoomed_image 
     return zoomed_images
-
-def subtract_images(images1: Dict[str, np.ndarray] ,images2: Dict[str, np.ndarray]) -> Dict[str, np.ndarray]:
-    """
-    Subtracts two images (image1 - image2) and save the resultant imag2. 
-
-    Parameters:
-        - images1(Dict[str, np.ndarray])    : The disctionary of images from which the other image will be subtracted. 
-        - images2(Dict[str, np.ndarray])    : The disctionary of images to subtract from first image.
-    Returns:
-        - Dict[str, np.ndarray]    : Returns the dictionary of subtracted images.
-
-    """ 
-
-    subtracted_images = {}      
-    
-    if images1 is None or images2 is None:
-        print(f"ERROR: Images are not availabe to compare.")
-        return {}
-
-    else:
-        for i, (key, image) in enumerate(images1.items()):
-            subtracted_images[key] = np.clip(np.abs(images1[key].astype(np.int16) - images2[key].astype(np.int16)), 0, 255).astype(np.uint8)
-    
-    return subtracted_images
 
 def calculate_negatives(images: Dict[str, np.ndarray]) -> Dict[str, np.ndarray]:
     """
@@ -513,21 +519,13 @@ def rotate_image(images: Dict[str, np.ndarray], angle: float = 0.0) -> Dict[str,
 
 
 if __name__ == "__main__":
+
     input_image_paths = ["assignments/assignment2/Flower.jpg",
                         "assignments/assignment2/Buddha.jpg"]
+    images = read_images(input_image_paths)
 
-    images = {}
     output_images_directory = "assignments/assignment2/Output/OutputImages/"
     output_plot_directory = "assignments/assignment2/Output/"
-
-    for imagepath in input_image_paths:
-        image_name = imagepath.split("/")[-1].split(".")[0]
-        images[image_name] = cv2.imread(imagepath)
-        images["GrayScale_"+image_name] = cv2.cvtColor(images[image_name], cv2.COLOR_BGR2GRAY)
-
-        if images[image_name] is None:
-            print(f"Image not found at: {image_path}")
-            raise FileNotFoundError
 
     # Display input images.
     plot_images(images, title = "Display input images", outputfile = output_plot_directory+"Input_Images.jpeg")
