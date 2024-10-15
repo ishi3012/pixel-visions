@@ -3,6 +3,12 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# Ignore input images
+Input_Images
+
+# Ignore Output folder in any subfolder of assignments
+assignments/**/Output/
+
 # C extensions
 *.so
 
