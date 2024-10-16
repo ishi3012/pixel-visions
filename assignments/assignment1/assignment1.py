@@ -1,5 +1,5 @@
 import pixel_visions.utils as u
-import pixel_visions.interpolation as i
+import pixel_visions.image_scaling as i
 
 # Image file paths
 input_image_path = "Input_Images/Nature1.jpg"

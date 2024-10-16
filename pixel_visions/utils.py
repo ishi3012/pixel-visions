@@ -75,7 +75,7 @@ def plot_images(images: Dict[str, np.ndarray], outputfile: str = None, title: st
     num_cols = 2 if len(images) > 1 else 1
     num_rows = (len(images) + num_cols - 1) // num_cols
 
-    plt.figure(figsize=(10, 5 * num_rows))
+    plt.figure(figsize=(20 , 7 * num_rows))
 
     for i, (key, image) in enumerate(images.items()):
         plt.subplot(num_rows, num_cols, i + 1)

@@ -115,3 +115,64 @@ def restore_image(image: np.ndarray, original_size: tuple[int, int], interpolati
     restored_image = cv2.resize(image, original_size, interpolation=interpolation.value)
 
     return restored_image
+
+def scale_image(image: np.ndarray, scale: float, original_dims: tuple = None) -> np.ndarray:
+    """
+    Shrinks or zooms the input image by the given scale factor.
+
+    Parameters:
+        image (np.ndarray): Input grayscale or color image (2D or 3D array).
+        scale (float): Factor by which to shrink or zoom the image (e.g., 0.5 for half size, 2 for double size).
+        original_dims (tuple): Optional parameter for zooming back to the exact original size.
+
+    Returns:
+        np.ndarray: Scaled image.
+    """
+
+    if image is None:
+        raise ValueError("The input image must be a valid NumPy array.") 
+
+    if scale <= 0:
+        raise ValueError("Scale must be a positive, non-zero value.") 
+
+    operation = "Zooming" if scale > 1 else "Shrinking"
+    print(f"{operation} the image")
+
+    # Get original dimensions
+    height, width = image.shape[:2]
+
+    # Calculate new dimensions
+    if operation == "Zooming"  and original_dims is not None:
+        new_height, new_width = original_dims
+    else:
+        new_height, new_width = int(height * scale), int(width * scale)
+    
+
+    print(f"Original size = {height, width}")
+    print(f"New size = {new_height, new_width}")
+   
+
+    # Initialize the scaled image
+    if len(image.shape) == 3:  # Color image
+        scaled_image = np.zeros((new_height, new_width, image.shape[2]), dtype=image.dtype)
+    else:  # Grayscale image
+        scaled_image = np.zeros((new_height, new_width), dtype=image.dtype)
+
+    # Populate pixel values in scaled image
+    for i in range(new_height):
+        for j in range(new_width):
+            original_i = int(i // scale)
+            original_j = int(j // scale)
+
+            # Ensure original indices are within bounds
+            original_i = min(original_i, height - 1)
+            original_j = min(original_j, width - 1)
+
+            # Assign the pixel value to the new image
+            scaled_image[i, j] = image[original_i, original_j]  
+
+    print(f"Scaled Image size = {scaled_image.shape[0], scaled_image.shape[1]}")
+
+    return scaled_image
+
+
