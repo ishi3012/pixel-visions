@@ -13,12 +13,13 @@ import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
 from enum import Enum, auto
-from typing import Dict, Tuple
+from typing import Dict, Tuple, List, Any, Callable
 
 class ImageLoadType(Enum):
     COLOR = cv2.IMREAD_COLOR
     GRAYSCALE = cv2.IMREAD_GRAYSCALE
     UNCHANGED = cv2.IMREAD_UNCHANGED
+
 
 def load_image(image_path:str, image_load_type: ImageLoadType = ImageLoadType.UNCHANGED) -> np.ndarray:
     """
@@ -75,7 +76,7 @@ def plot_images(images: Dict[str, np.ndarray], outputfile: str = None, title: st
     num_cols = 2 if len(images) > 1 else 1
     num_rows = (len(images) + num_cols - 1) // num_cols
 
-    plt.figure(figsize=(20 , 7 * num_rows))
+    plt.figure(figsize=(30 , 10 * num_rows))
 
     for i, (key, image) in enumerate(images.items()):
         plt.subplot(num_rows, num_cols, i + 1)
@@ -91,13 +92,15 @@ def plot_images(images: Dict[str, np.ndarray], outputfile: str = None, title: st
             raise ValueError(f"ERROR: Image '{key}' has unsupported shape: {image.shape}")
 
         plt.axis(axis)
-        plt.title(key, fontsize=10)
+        plt.title(key, fontsize=14)
 
-    plt.suptitle(title, fontsize=12)
+    plt.suptitle(title, fontsize=16)
     plt.tight_layout(rect=[0, 0, 1, 0.95])
     if outputfile:
         plt.savefig(outputfile)
     plt.show()
+    # Close the figure after showing
+    plt.close()
 
 def display_image_statistics(image: np.ndarray) -> None:
     """
@@ -287,4 +290,101 @@ def reduce_gray_levels(image: np.ndarray, scale: float = 0.1) -> np.ndarray:
     reduced_image = np.floor(image / scale_factor).astype(np.uint8) * scale_factor
 
     return reduced_image
+
+class NoiseType(Enum):
+    GAUSSIAN = ("GAUSSIAN", lambda image, **kwargs: add_gaussian_noise(image, **kwargs))
+    SALT_AND_PEPPER = ("SALT_AND_PEPPER", lambda image, **kwargs: add_salt_and_pepper_noise(image, **kwargs))
+
+    def __init__(self, name:str, function:Callable):
+        """
+        Initializes the noise type enum member.
+
+        Parameters:
+            name (str): The name of the noise type as a string.
+            function (Callable[[np.ndarray, Any], np.ndarray]): The function associated with the noise type.
+        """
+        self._name = name
+        self._function = function
+
+    @property
+    def name(self) -> str:
+        """ Get the name of the Edge Detection filter."""
+        return self._name
+
+    def apply(self, image: np.ndarray, **kwargs: Any) -> np.ndarray:
+        """
+        Apply the noise type to the given image with additional arguments.
+
+        Args:
+            image (np.ndarray): The input image to which noise will be added.
+            **kwargs: Additional keyword arguments to pass to the noise function.
+
+        Returns:
+            tuple[np.ndarray, str]: A tuple containing the noisy image and a string with the parameters used.
+        """
+        parameters_string = f"Applying {self.name} with the following arguments:\n"
+        parameters_string+=f"    Image: {image.shape}"
+        if kwargs:            
+            parameters_string+=f"    Noise Parameters: {kwargs}"
+        
+        return self._function(image, **kwargs), parameters_string
+    
+def add_gaussian_noise(image: np.ndarray, mean: float = 0.0, sigma: float = 0.1) -> np.ndarray:
+    """
+    Add Gaussian noise to the image.
+
+    Args:
+        image (np.ndarray): The input image.
+        mean (float): The mean of the Gaussian noise.
+        sigma (float): The standard deviation of the Gaussian noise.
+
+    Returns:
+        np.ndarray: The noisy image with Gaussian noise added.
+    """
+    noise = np.random.normal(mean, sigma, image.shape)
+    noisy_image = np.clip(image + noise, 0, 255).astype(np.uint8)
+
+    return noisy_image
+
+def add_salt_and_pepper_noise(image: np.ndarray, salt_prob: float = 0.02, pepper_prob: float = 0.02) -> np.ndarray:
+    """
+    Add salt and pepper noise to the image.
+
+    Args:
+        image (np.ndarray): The input image.
+        salt_prob (float): The probability of adding salt noise.
+        pepper_prob (float): The probability of adding pepper noise.
+
+    Returns:
+        np.ndarray: The noisy image with salt and pepper noise added.
+    """
+    noisy_image = np.copy(image)
+    total_pixels = image.size
+    num_salt = np.ceil(salt_prob * total_pixels)
+    num_pepper = np.ceil(pepper_prob * total_pixels)
+
+    # Add salt noise
+    coords = [np.random.randint(0, i - 1, int(num_salt)) for i in image.shape]
+    noisy_image[coords[0], coords[1]] = 255
+
+    # Add pepper noise
+    coords = [np.random.randint(0, i - 1, int(num_pepper)) for i in image.shape]
+    noisy_image[coords[0], coords[1]] = 0
+
+    return noisy_image
+    
+
+def add_noise(image: np.ndarray, noise_type: NoiseType, **kwargs: Any) -> tuple[np.ndarray, str]:
+    """
+    Add noise to the image based on the specified noise type.
+
+    Args:
+        image (np.ndarray): The input image.
+        noise_type (NoiseType): The type of noise to add (e.g., Gaussian, salt and pepper).
+        **kwargs: Additional keyword arguments for the noise function.
+
+    Returns:
+        tuple[np.ndarray, str]: A tuple containing the noisy image and the parameter string.
+    """
+    return noise_type.apply(image, **kwargs)
 

@@ -10,7 +10,7 @@ output_image_path = "assignments/assignment2/Output/Nature1.jpg"
 plot_image_path = "assignments/assignment2/Output/Nature1_plot.jpg"
 
 
-# Define a dictionaries of output images
+# Define dictionary of output images
 output_images = {}
 
 

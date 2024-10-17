@@ -32,7 +32,6 @@ class InterpolationMethod(Enum):
     BILINEAR = cv2.INTER_LINEAR
     BICUBIC = cv2.INTER_CUBIC
 
-
 def resize_image(image: np.ndarray, scale: float, interpolation: InterpolationMethod = InterpolationMethod.NEAREST_NEIGHBOR) -> np.ndarray:
     """
     Resizes an image using the given scale and interpolation method.
