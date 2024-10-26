@@ -76,7 +76,7 @@ def plot_images(images: Dict[str, np.ndarray], outputfile: str = None, title: st
     num_cols = 2 if len(images) > 1 else 1
     num_rows = (len(images) + num_cols - 1) // num_cols
 
-    plt.figure(figsize=(30 , 10 * num_rows))
+    plt.figure(figsize=(30 , 12 * num_rows))
 
     for i, (key, image) in enumerate(images.items()):
         plt.subplot(num_rows, num_cols, i + 1)
@@ -98,6 +98,8 @@ def plot_images(images: Dict[str, np.ndarray], outputfile: str = None, title: st
     plt.tight_layout(rect=[0, 0, 1, 0.95])
     if outputfile:
         plt.savefig(outputfile)
+    
+    # print(outputfile)
     plt.show()
     # Close the figure after showing
     plt.close()
@@ -343,7 +345,6 @@ def add_gaussian_noise(image: np.ndarray, mean: float = 0.0, sigma: float = 0.1)
     """
     noise = np.random.normal(mean, sigma, image.shape)
     noisy_image = np.clip(image + noise, 0, 255).astype(np.uint8)
-
     return noisy_image
 
 def add_salt_and_pepper_noise(image: np.ndarray, salt_prob: float = 0.02, pepper_prob: float = 0.02) -> np.ndarray:

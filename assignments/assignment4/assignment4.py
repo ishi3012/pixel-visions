@@ -160,6 +160,19 @@ def apply_roberts(assignment_folder:str = ""):
         u.plot_images(Roberts_filtered_images,Roberts_filtered_images_path, title = parameters)
         Roberts_filtered_images.pop("Roberts_filtered_"+str(i))
 
+def problem2_Edge_Filter():
+    display_dog1_image(foldername = "Problem1")
+    assignment_folder = "assignments/assignment4/Output/Problem2/"
+    # Apply Sobel filter
+    print(f"~~~~~~~~~~~~~ Custome Sobel filter ~~~~~~~~~~~~~~~~~~~~~")
+    sobel_filtered_images = {}
+    sobel_filtered_images['Original_Image'] = output_images['Grayscale_Image']
+    sobel_filtered_images_path = assignment_folder + "2_Sobel_filtered_images.jpg"
+    sobel_filtered_images["Gaussian_Sobel_Filtered"], _ = sf.EdgeDetection.GAUSSIAN_DERIVATIVE.apply(output_images['Grayscale_Image'], ksize = 7, sigma = 1)
+    u.plot_images(sobel_filtered_images,sobel_filtered_images_path, title = "Custom Sobel Filter")
+
+
+
 def problem3_Histogram_based_segmentation():
     display_dog1_image(foldername = "Problem3")
     assignment_folder = "assignments/assignment4/Output/Problem3/"
@@ -174,10 +187,10 @@ def problem3_Histogram_based_segmentation():
 
     #Compute the histogram-based segmentation and display binary segmentations
 
-    intensity_ranges = [(0,30), (60, 100), (120, 180), (250 ,256)]
+    # intensity_ranges = [(0,30), (60, 100), (120, 180), (250 ,256)]
+    intensity_ranges = [(0,35), (80, 120), (160, 180), (220 ,245), (250 ,256)]
     Histogram_Segmented_Images = s.histogram_based_segmentation(output_images['Grayscale_Image'],
                                                                 Histogram_Plot_path, 
-                                                                use_otsu=False,
                                                                 ranges = intensity_ranges)
     images_to_plot = {}
 
@@ -238,10 +251,10 @@ def problem4_Noise_reduction():
     
 
 if __name__ == "__main__":
-    problem1_EdgeDetection()
-    problem3_Histogram_based_segmentation()
-    problem4_Noise_reduction()
-
+    # problem1_EdgeDetection()
+    # problem3_Histogram_based_segmentation()
+    # problem4_Noise_reduction()
+    problem2_Edge_Filter()
 
 
 

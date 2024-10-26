@@ -154,38 +154,30 @@ class SpatialFilter(Enum):
     MEDIAN = (cv2.medianBlur, "Median") # Reduces salt-and-pepper noise
     BILATERAL = (cv2.bilateralFilter, "Bilateral") # Smoothes the image while preserving edges
     BOX = (cv2.boxFilter, "Box") # Apply a box filter (similar to the average filter but with more flexibility)
-
     def __init__(self, function: Any, name: str) -> None:
         """
         Initializes the spatial filter enum member.
-
         Args:
             function: The OpenCV function associated with the filter.
             name: The name of the filter as a string.
         """
         self._function = function
         self._name = name
-
     @property
     def function(self) -> Any:
         """Get the OpenCV function associated with the filter."""
         return self._function
-
     @property
     def name(self) -> str:
         """Get the name of the filter."""
-        return self._name
-    
-
+        return self._name  
     def apply(self, image: np.ndarray, *args: Tuple[Any], **kwargs: Any) -> np.ndarray:
         """
         Apply the filter to the given image with additional arguments.
-
         Args:
             image (np.ndarray): The input image to be filtered.
             *args: Additional positional arguments to pass to the filter function.
             **kwargs: Additional keyword arguments to pass to the filter function.
-
         Returns:
             np.ndarray: The filtered image.
         """
@@ -196,6 +188,7 @@ class EdgeDetection(Enum):
     CANNY   = ("Canny", lambda image, **kwargs: canny_filter(image, **kwargs))
     PREWITT = ("Prewitt", lambda image, **kwargs: prewitt_filter(image, **kwargs))
     ROBERTS = ("Roberts", lambda image, **kwargs: roberts_filter(image, **kwargs))
+    GAUSSIAN_DERIVATIVE = ("Gaussian_derivative", lambda image, **kwargs:apply_custom_sobel_filter(image, **kwargs))
 
 
     def __init__(self, name: str, function: Callable):
@@ -238,8 +231,7 @@ class EdgeDetection(Enum):
 # def sobel_filter(image: np.ndarray, ddepth: int = cv2.CV_64F, dx: int = 1, dy: int = 0, ksize: int = 3, scale: int = 1, delta: int = 0, borderType: int = cv2.BORDER_DEFAULT) -> np.ndarray:
 def sobel_filter(image: np.ndarray, **kwargs: Any) -> np.ndarray:
     """
-    Apply the Sobel filter to the given image.
-
+    Apply the Sobel filter to the given image. 
     Args:
         image (np.ndarray): The input image to be filtered.
         ddepth (int): Desired depth of the output image (default is cv2.CV_64F).
@@ -249,14 +241,12 @@ def sobel_filter(image: np.ndarray, **kwargs: Any) -> np.ndarray:
         scale (int): Optional scaling factor for the computed derivative (default is 1).
         delta (int): Optional offset added to the results (default is 0).
         borderType (int): Pixel extrapolation method (default is cv2.BORDER_DEFAULT).
-
     Returns:
         np.ndarray: The filtered image.
     """
     # Check if the image is grayscale
     if len(image.shape) != 2:
-        raise ValueError("Input image must be a grayscale image.")
-    
+        raise ValueError("Input image must be a grayscale image.")    
     # Default values
     ddepth = kwargs.get('ddepth', cv2.CV_64F)
     dx = kwargs.get('dx', 1)
@@ -265,17 +255,13 @@ def sobel_filter(image: np.ndarray, **kwargs: Any) -> np.ndarray:
     scale = kwargs.get('scale', 1)
     delta = kwargs.get('delta', 0)
     borderType = kwargs.get('borderType', cv2.BORDER_DEFAULT)
-    
     # Apply Sobel filter in x and y directions
     sobel_x = cv2.Sobel(image, ddepth=ddepth, dx=dx, dy=0, ksize=ksize, scale=scale, delta=delta, borderType=borderType)
     sobel_y = cv2.Sobel(image, ddepth=ddepth, dx=0, dy=dy, ksize=ksize, scale=scale, delta=delta, borderType=borderType)
-       
     # Combine gradients
     sobel_edges = cv2.magnitude(sobel_x, sobel_y)
-    
     # Normalize to the range [0, 255]
     sobel_edges = cv2.normalize(sobel_edges, None, 0, 255, cv2.NORM_MINMAX)
-    
     # Convert to 8-bit image
     return np.uint8(sobel_edges)
 
@@ -287,7 +273,6 @@ def canny_filter(image: np.ndarray, **kwargs: Any) -> np.ndarray:
         image (np.ndarray): The input image to be filtered.
         threshold1 (int): The lower threshold for hysteresis.
         threshold2 (int): The upper threshold for hysteresis.
-
     Returns:
         np.ndarray: The filtered image.
     """
@@ -300,13 +285,11 @@ def canny_filter(image: np.ndarray, **kwargs: Any) -> np.ndarray:
     # Check if the image is grayscale
     if len(image.shape) != 2:
         raise ValueError("Input image must be a grayscale image.")
-
     return cv2.Canny(image, threshold1, threshold2, apertureSize=apertureSize, L2gradient=L2gradient)
 
 def prewitt_filter(image: np.ndarray, **kwargs) -> np.ndarray:
     """
     Apply the Prewitt filter to the given image.
-
     Args:
         image (np.ndarray): The input image to be filtered.
         **kwargs: Additional parameters for the filter (not used in this simple implementation).
@@ -314,30 +297,23 @@ def prewitt_filter(image: np.ndarray, **kwargs) -> np.ndarray:
     Returns:
         np.ndarray: The filtered image.
     """
-
     # Default values
     threshold  = kwargs.get('threshold', 100)
     scale      = kwargs.get('scale', 1)
-
     # Define Prewitt kernels
     kernel_x = np.array([[1, 0, -1],
                           [1, 0, -1],
-                          [1, 0, -1]], dtype=np.float32)
-    
+                          [1, 0, -1]], dtype=np.float32)    
     kernel_y = np.array([[1, 1, 1],
                           [0, 0, 0],
                           [-1, -1, -1]], dtype=np.float32)
-
     # Apply the kernels to the image
     grad_x = cv2.filter2D(image, cv2.CV_32F, kernel_x)
     grad_y = cv2.filter2D(image, cv2.CV_32F, kernel_y)
-
     # Compute the magnitude of the gradient
     filtered_image = cv2.magnitude(grad_x, grad_y)
-
     # Scale the output
     filtered_image *= scale
-
     # Apply thresholding
     _, filtered_image = cv2.threshold(filtered_image, threshold, 255, cv2.THRESH_BINARY)
 
@@ -346,40 +322,60 @@ def prewitt_filter(image: np.ndarray, **kwargs) -> np.ndarray:
 def roberts_filter(image: np.ndarray, scale=1, threshold=0, **kwargs) -> np.ndarray:
     """
     Apply the Roberts filter to the given image.
-
     Args:
         image (np.ndarray): The input image to be filtered.
         scale (float): Scaling factor for the output.
         threshold (int): Threshold for edge detection.
         **kwargs: Additional parameters for the filter.
-
     Returns:
         np.ndarray: The filtered image.
     """
-
     # Default values
     threshold  = kwargs.get('threshold', 100)
     scale      = kwargs.get('scale', 1)
-
     # Roberts kernels
     kernel_x = np.array([[1, 0],
                          [0, -1]], dtype=np.float32)
-
     kernel_y = np.array([[0, 1],
                          [-1, 0]], dtype=np.float32)
-
     # Apply the kernels to the image
     grad_x = cv2.filter2D(image, cv2.CV_32F, kernel_x)
     grad_y = cv2.filter2D(image, cv2.CV_32F, kernel_y)
-
     # Compute the magnitude of the gradient
     filtered_image = cv2.magnitude(grad_x, grad_y)
-
     # Scale the output
     filtered_image *= scale
-
     # Apply thresholding if needed
     if threshold > 0:
         _, filtered_image = cv2.threshold(filtered_image, threshold, 255, cv2.THRESH_BINARY)
 
     return filtered_image
+
+def apply_custom_sobel_filter(image: np.ndarray, ksize = 7, sigma = 1, **kwargs) -> np.ndarray:
+    """
+    Apply custom Sobel filters to detect edges in both x and y directions.
+
+    Parameters:
+        image (np.ndarray): Input grayscale image.
+        sobel_x (np.ndarray): Sobel-like filter in x direction.
+        sobel_y (np.ndarray): Sobel-like filter in y direction.
+
+    Returns:
+        edges (np.ndarray): Combined edges detected from both directions.
+    """
+
+    k = ksize // 2
+    x, y = np.meshgrid(np.arange(-k, k+1), np.arange(-k, k+1))
+
+    sobel_x = -x / (2 * np.pi * sigma ** 4) * np.exp(-(x ** 2 + y ** 2)/(2 * sigma ** 2))
+    sobel_y = -y / (2 * np.pi * sigma ** 4) * np.exp(-(x ** 2 + y ** 2)/(2 * sigma ** 2))
+    grad_x = cv2.filter2D(image, -1, sobel_x).astype(np.float32)
+    grad_y = cv2.filter2D(image, -1, sobel_y).astype(np.float32)
+    sobel_edges = cv2.magnitude(grad_x, grad_y)
+    sobel_edges = cv2.normalize(sobel_edges, None, 0, 255, cv2.NORM_MINMAX)
+    # Convert to 8-bit image
+    return np.uint8(sobel_edges)
+
+
+
+
