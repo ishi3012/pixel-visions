@@ -29,9 +29,9 @@ def display_input_image(foldername: str = ""):
 
     # Image file paths
     # input_image_path = "Input_Images/How-To-Master-Pet-Photography-940x529.png"
-    input_image_path = "Input_Images/Tulip1.jpg"
-    output_image_path = assignment_folder + "Tulip1.jpg"
-    plot_image_path = assignment_folder + "Tulip Image.jpg"
+    input_image_path = "Input_Images/Chicago_River1.jpg"
+    output_image_path = assignment_folder + "Input_Image.jpg"
+    plot_image_path = assignment_folder + "Input_Images.jpg"
 
     # Define dictionary of output images    
     output_images['Original_Image'] = u.load_image(input_image_path, image_load_type=u.ImageLoadType.UNCHANGED)
@@ -41,143 +41,148 @@ def display_input_image(foldername: str = ""):
     u.plot_images(output_images,plot_image_path, title = "Original Image")
     return output_images
 
-def binary_thresholding(image: np.ndarray) -> np.ndarray:
-    
-    assert image is not None and image.size > 0, "Input image is empty"
-
-    _, binary_image = cv2.threshold(image, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-
-    return binary_image
-
-def apply_erosion_dilation(binary_image: np.ndarray, iteration: int = 2) -> np.ndarray:
-
-    assert binary_image is not None and binary_image.size > 0, "Input image is empty"
-    
-    structuring_element = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
-    # Apply erosion twice
-    eroded = cv2.erode(binary_image, structuring_element, iterations=iteration)
-    # Apply dilation twice
-    result = cv2.dilate(eroded, structuring_element, iterations=iteration)
-    return result
-
-def apply_dilation_erosion(binary_image: np.ndarray, iterations: int = 2) -> np.ndarray:
-
-    assert binary_image is not None and binary_image.size > 0, "Input image is empty"
-
-    structuring_element = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
-    
-    dilated = cv2.dilate(binary_image, structuring_element, iterations)
-    
-    result = cv2.erode(dilated, structuring_element, iterations)
-
-    return result
-
 def problem1_erosion_and_dilation(image: np.ndarray, output_folderpath:str = "") -> None:
 
     print("Problem 1: Erosion and Dilation")
     assert image is not None and image.size > 0, "Input image is empty"
 
     output_images = {}
-    output_images["Original_Image"] = image
+    # output_images["Original_Image"] = image   
     
     if output_folderpath == "":
-        output_folderpath = "assignments/assignment6/Output/"
+        output_folderpath = "assignments/assignment6/Output/Problem1/"
 
+    # print the original image
     grayscale_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     output_images["Grayscale_image"] = grayscale_image
-    binary_image = binary_thresholding(grayscale_image)
+
+    _, binary_image = cv2.threshold(grayscale_image, np.mean(grayscale_image), 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
     output_images["Binary_image"] = binary_image
 
-    erosion_dilation_result = apply_erosion_dilation(binary_image)    
-    output_images["Erosion_dilation_result"] = erosion_dilation_result
-    dilation_erosion_result = apply_dilation_erosion(binary_image)
-    output_images["Dilation_Erosion_result"] = dilation_erosion_result
-    u.plot_images(output_images,output_folderpath+"1_ErosionAndDilation.jpg", title = "Problem 1 : Erosion and Dilation ")
+    u.plot_images(output_images,output_folderpath+"1a_ErosionAndDilation.jpg", title = "Problem 1 : Erosion and Dilation ")
 
-def apply_opening_closing(binary_image: np.ndarray, iteration:int = 2) -> Dict[str, np.ndarray]:
+    # output_images.pop("Original_Image")
+    output_images.pop("Grayscale_image")
+    output_images.pop("Binary_image")
 
+    # print the Eroded and Dilated
     structuring_element = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
-    
-    # Dictionary to store results
-    output_images = {}
 
-    # Apply opening twice, then closing twice
-    opened = cv2.morphologyEx(binary_image, cv2.MORPH_OPEN, structuring_element, iterations=iteration)
-    opened_then_closed = cv2.morphologyEx(opened, cv2.MORPH_CLOSE, structuring_element, iterations=iteration)
-    output_images["Opened_then_Closed"] = opened_then_closed
+    eroded = cv2.erode(binary_image, structuring_element, iterations=2)
+    output_images["Eroded"] = eroded
 
-    # Apply closing twice, then opening twice
-    closed = cv2.morphologyEx(binary_image, cv2.MORPH_CLOSE, structuring_element, iterations=iteration)
-    closed_then_opened = cv2.morphologyEx(closed, cv2.MORPH_OPEN, structuring_element, iterations=iteration)
-    output_images["Closed_then_Opened"] = closed_then_opened
+    dilated = cv2.dilate(binary_image, structuring_element, iterations=2)  
+    output_images["Dilated"] = dilated
 
-    return output_images
+    u.plot_images(output_images,output_folderpath+"1b_ErosionAndDilation.jpg", title = "Problem 1 : Erosion and Dilation ")
+    output_images.pop("Eroded")
+    output_images.pop("Dilated")
+
+    dilation_after_erosion = cv2.dilate(eroded, structuring_element, iterations=2)
+    output_images["Dilation_after_erosion"] = dilation_after_erosion
+
+    erosion_after_dilation = cv2.erode(dilated, structuring_element, iterations=2)
+    output_images["Erosion_after_dilation"] = erosion_after_dilation
+
+    u.plot_images(output_images,output_folderpath+"1c_ErosionAndDilation.jpg", title = "Problem 1 : Erosion and Dilation ")
 
 def problem2_opening_and_closing(image: np.ndarray, output_folderpath:str = "") -> None:
     print("Problem 2: Opening and Closing ")
     
     assert image is not None and image.size > 0, "Input image is empty"
-
     output_images = {}
-    # output_images["Original_Image"] = image
+    # output_images["Original_Image"] = image  
     
     if output_folderpath == "":
-        output_folderpath = "assignments/assignment6/Output/"
+        output_folderpath = "assignments/assignment6/Output/Problem2/"
 
+    # print the original image
     grayscale_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     output_images["Grayscale_image"] = grayscale_image
 
-    binary_image = binary_thresholding(grayscale_image)
+    _, binary_image = cv2.threshold(grayscale_image, np.mean(grayscale_image), 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
     output_images["Binary_image"] = binary_image
 
-    output_images.update(apply_opening_closing(binary_image))
-   
-    u.plot_images(output_images,output_folderpath+"2_OpeningAndClosing.jpg", title = "Problem 2: Opening and Closing")
+    u.plot_images(output_images,output_folderpath+"2a_OpeningAndClosing.jpg", title = "Problem 2: Opening and Closing")
 
-def extract_boundaries(binary_image: np.ndarray) -> np.ndarray:
-    
+    # output_images.pop("Original_Image")
+    output_images.pop("Grayscale_image")
+    output_images.pop("Binary_image")
+
+    # Print opening and closing
     structuring_element = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
-    eroded_image = cv2.erode(binary_image, structuring_element)
-    boundary_image = cv2.subtract(binary_image, eroded_image)    
-    return boundary_image
+    opened_image_1  = cv2.morphologyEx(binary_image, cv2.MORPH_OPEN, structuring_element)
+    output_images["Opened_image_1"] = opened_image_1
+    opened_image_2 = cv2.morphologyEx(opened_image_1, cv2.MORPH_OPEN, structuring_element)
+    output_images["Opened_image_2"] = opened_image_2
 
-def extract_canny_edges(grayscale_image: np.ndarray, low_threshold: int = 100, high_threshold: int = 200) -> np.ndarray:
-    
-    edges = cv2.Canny(grayscale_image, low_threshold, high_threshold)    
-    return edges
+    u.plot_images(output_images,output_folderpath+"2b_OpeningAndClosing.jpg", title = "Problem 2: Opening and Closing")
 
+    # output_images.pop("Original_Image")
+    output_images.pop("Opened_image_1")
+    output_images.pop("Opened_image_2")
+
+    closed_image_1  = cv2.morphologyEx(binary_image, cv2.MORPH_CLOSE, structuring_element)
+    output_images["Closed_image_1"] = closed_image_1
+    closed_image_2 = cv2.morphologyEx(closed_image_1, cv2.MORPH_CLOSE, structuring_element)
+    output_images["Closed_image_2"] = closed_image_2
+
+    u.plot_images(output_images,output_folderpath+"2c_OpeningAndClosing.jpg", title = "Problem 2: Opening and Closing")
+    output_images.pop("Closed_image_1")
+    output_images.pop("Closed_image_2")
+
+    opened_after_closing_1 = cv2.morphologyEx(closed_image_2, cv2.MORPH_OPEN, structuring_element)
+    output_images["Opened_after_closing_1"] = opened_after_closing_1
+    opened_after_closing_2 = cv2.morphologyEx(opened_after_closing_1, cv2.MORPH_OPEN, structuring_element)
+    output_images["Opened_after_closing_2"] = opened_after_closing_2
+   
+    u.plot_images(output_images,output_folderpath+"2d_OpeningAndClosing.jpg", title = "Problem 2: Opening and Closing")
 
 def problem3_boundary_extraction (image: np.ndarray, output_folderpath:str = "") -> None:
     print("Problem 3: Boundary Extraction ")
     
     assert image is not None and image.size > 0, "Input image is empty"
-
     output_images = {}
-    # output_images["Original_Image"] = image
+    # output_images["Original_Image"] = image  
     
     if output_folderpath == "":
-        output_folderpath = "assignments/assignment6/Output/"
+        output_folderpath = "assignments/assignment6/Output/Problem3/"
 
+    # print the original image
     grayscale_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     output_images["Grayscale_image"] = grayscale_image
 
-    binary_image = binary_thresholding(grayscale_image)
+    _, binary_image = cv2.threshold(grayscale_image, np.mean(grayscale_image), 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
     output_images["Binary_image"] = binary_image
 
-    boundary_image = extract_boundaries(binary_image)
-    output_images["Boundary_image"] = boundary_image
-    canny_edges = extract_canny_edges(grayscale_image)
+    u.plot_images(output_images,output_folderpath+"3a_BoundaryExtraction.jpg", title = "Problem 3: Boundary Extraction")
+
+    # output_images.pop("Original_Image")
+    output_images.pop("Grayscale_image")
+    output_images.pop("Binary_image")
+
+    # Print opening and closing
+    structuring_element = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
+    eroded = cv2.erode(binary_image, structuring_element)
+    output_images["Eroded"] = eroded
+
+    boundary = cv2.subtract(binary_image, eroded)
+    output_images["Boundary"] = boundary
+
+    u.plot_images(output_images,output_folderpath+"3b_BoundaryExtraction.jpg", title = "Problem 3: Boundary Extraction")
+        
+    # output_images.pop("Original_Image")
+    output_images.pop("Eroded")
+    output_images.pop("Boundary")
+
+    canny_edges = cv2.Canny(image, 100, 200)
     output_images["Canny_edges"] = canny_edges
-   
-    u.plot_images(output_images,output_folderpath+"3_BoundaryExtraction.jpg", title = "Problem 3: Boundary Extraction ")
+    
+    u.plot_images(output_images,output_folderpath+"3c_BoundaryExtraction.jpg", title = "Problem 3: Boundary Extraction")
 
 if __name__ == "__main__":
-
    
-    output_images = display_input_image()
-    
-    # problem1_images_path = 'assignments/assignment6/Output/Problem1/'
-    
+    output_images = display_input_image()    
     problem1_erosion_and_dilation(output_images["Original_Image"])
     problem2_opening_and_closing(output_images["Original_Image"])
     problem3_boundary_extraction(output_images["Original_Image"])
