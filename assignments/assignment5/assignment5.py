@@ -68,7 +68,9 @@ def problem1_edge_detection_with_color(image: np.ndarray, output_folderpath:str 
     sobel_y = cv2.Sobel(grayscale_image, cv2.CV_64F, 0, 1, ksize=3)
 
     sobel_edges = np.hypot(sobel_x, sobel_y)
-    sobel_edges = np.uint8(sobel_edges / sobel_edges.max() * 255)  # Normalize to 0-255 and convert to uint8
+
+    # Normalize to 0-255 and convert to uint8
+    sobel_edges = np.uint8(sobel_edges / sobel_edges.max() * 255)  
     grayscale_images["Sobel_edges_GrayScale"] = sobel_edges
 
     u.plot_images(grayscale_images,output_folderpath+"GrayScale_SobelEdgeDetection.jpg", title = "Problem 1 GrayScale: Sobel Edge Detection")
@@ -121,8 +123,11 @@ def problem2a_color_segmentation(image: np.ndarray, output_folderpath:str = "") 
 
     _, thresholded_image = cv2.threshold(grayscale_image, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)   
     segmented_a = image.copy()
-    segmented_a[thresholded_image == 0] = [0, 255, 0]  # Green for background
+
+    # Green for background
+    segmented_a[thresholded_image == 0] = [0, 255, 0]  
     output_images["Segmented_Image_2a"] = segmented_a 
+
     u.plot_images(output_images,output_folderpath+"2b_Color_Segmentation.jpg", title = "Problem 2 : Color Segmentation")
 
 def problem2b_color_segmentation(image: np.ndarray,output_folderpath:str = "") -> None:
@@ -133,27 +138,30 @@ def problem2b_color_segmentation(image: np.ndarray,output_folderpath:str = "") -
     
     output_images = {}
     output_images["Original_Image"] = image
-
-    grayscale_image = np.mean(image, axis=2).astype(np.uint8)
-    output_images["Grayscale_image"] = grayscale_image
-
+    
     channels = cv2.split(image)
+    channel_names = ["Blue_Channel", "Green_Channel", "Red_Channel"]
     masks = []
 
-    # Apply Otsu's thresholding to each channel and combine them
-    for channel in channels:
+    # Apply Otsu's thresholding to each channel and "blue out" the object regions
+    for i, channel in enumerate(channels):
         _, channel_mask = cv2.threshold(channel, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
         masks.append(channel_mask)
 
-    # Combine the masks with a logical AND to create a final mask for the object regions
+        # Apply the mask to "blue out" detected regions in this channel
+        channel_blued = image.copy()
+        channel_blued[channel_mask == 255] = [255, 0, 0]  # Apply blue color where mask is true
+        output_images[f"{channel_names[i]}_Blued_Out"] = channel_blued
+
+    
     combined_mask = cv2.bitwise_and(masks[0], cv2.bitwise_and(masks[1], masks[2]))
+    segmented_combined = image.copy()
+    segmented_combined[combined_mask == 255] = [255, 0, 0]
+    output_images["Combined_Segmented_Image"] = segmented_combined
 
-    # Apply mask to blue out the detected object regions
-    segmented_b = image.copy()
-    segmented_b[combined_mask == 255] = [255, 0, 0] 
-    output_images["Segmented_Image_2b"] = segmented_b
-    u.plot_images(output_images,output_folderpath+"2b_Color_Segmentation.jpg", title = "Problem 2 : Color Segmentation")
-
+    # Plot images, assuming a utility function `u.plot_images` is available
+    u.plot_images(output_images, output_folderpath + "2b_Color_Segmentation.jpg", title="Problem 2: Color Segmentation")
+    
 def problem2c_color_segmentation(image: np.ndarray,output_folderpath:str = "") -> None:
     
     print("Problem 2c: Color Segmentation")
@@ -163,8 +171,11 @@ def problem2c_color_segmentation(image: np.ndarray,output_folderpath:str = "") -
     output_images = {}
     output_images["Original_Image"] = image
 
+     # Convert image to HSV (HSI) color space
     hsi_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
     output_images["HSI_Image"] = hsi_image
+    
+    # Define thresholds for hue to isolate red tones (with wrap-around at 0-10 and 160-179)
     lower_hue = np.array([0, 50, 50])    
     upper_hue = np.array([10, 255, 255])   
     lower_hue2 = np.array([160, 50, 50])   
@@ -173,29 +184,43 @@ def problem2c_color_segmentation(image: np.ndarray,output_folderpath:str = "") -
     mask_hue1 = cv2.inRange(hsi_image, lower_hue, upper_hue)
     mask_hue2 = cv2.inRange(hsi_image, lower_hue2, upper_hue2)
     mask_combined = cv2.bitwise_or(mask_hue1, mask_hue2)
-
+    # Create separate masks and blued-out images for R, G, B channels based on the HSV mask
+    for i, color in enumerate(["Blue_Channel", "Green_Channel", "Red_Channel"]):
+        
+        channel_blued = image.copy()
+        channel_mask = mask_combined if color == "Red_Channel" else np.zeros_like(mask_combined)
+        
+        if color == "Green_Channel":
+            lower_green, upper_green = np.array([35, 50, 50]), np.array([85, 255, 255])
+            channel_mask = cv2.inRange(hsi_image, lower_green, upper_green)
+        elif color == "Blue_Channel":
+            lower_blue, upper_blue = np.array([100, 50, 50]), np.array([140, 255, 255])
+            channel_mask = cv2.inRange(hsi_image, lower_blue, upper_blue)
+        
+        channel_blued[channel_mask > 0] = [255, 0, 0]
+        output_images[f"{color}_Blued_Out"] = channel_blued
+    # Final combined blued-out image based on combined mask
     segmented_c = image.copy()
     segmented_c[mask_combined > 0] = [255, 0, 0]
-
-    output_images["Segmented_Image_2c"] = segmented_c
-    u.plot_images(output_images,output_folderpath+"2c_Color_Segmentation.jpg", title = "Problem 2 : Color Segmentation")
+    output_images["Combined_Segmented_Image"] = segmented_c
+    # Plot images, assuming a utility function `u.plot_images` is available
+    u.plot_images(output_images, output_folderpath + "2c_Color_Segmentation.jpg", title="Problem 2: Color Segmentation")
     
 if __name__ == "__main__":
-
    
     output_images = display_input_image()
     
-    # problem1_images_path = 'assignments/assignment5/Output/Problem1/'
+    problem1_images_path = 'assignments/assignment5/Output/Problem1/'
     
-    problem1_edge_detection_with_color(output_images["Original_Image"])
+    problem1_edge_detection_with_color(output_images["Original_Image"], problem1_images_path)
 
-    # problem2_images_path = 'assignments/assignment5/Output/Problem2/'
+    problem2_images_path = 'assignments/assignment5/Output/Problem2/'
     
-    problem2a_color_segmentation(output_images["Original_Image"])
+    problem2a_color_segmentation(output_images["Original_Image"],problem2_images_path)
 
-    problem2b_color_segmentation(output_images["Original_Image"])
+    problem2b_color_segmentation(output_images["Original_Image"],problem2_images_path)
 
-    problem2c_color_segmentation(output_images["Original_Image"])
+    problem2c_color_segmentation(output_images["Original_Image"],problem2_images_path)
 
 
 
